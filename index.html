@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>REALITY DISTORTION ENGINE - CAMERA MODE</title>
+    <title>REALITY DISTORTION ENGINE - FULL CAMERA MODE</title>
     <style>
         * {
             margin: 0;
@@ -23,13 +23,44 @@
             position: fixed;
         }
         
-        #reality-canvas {
+        #camera-container {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+            overflow: hidden;
             z-index: 1;
+        }
+        
+        #camera-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            z-index: 1;
+        }
+        
+        #overlay-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            mix-blend-mode: screen;
+        }
+        
+        #distortion-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 3;
         }
         
         #interface {
@@ -38,7 +69,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 2;
+            z-index: 4;
             pointer-events: none;
             color: #0f0;
             padding: 1.5rem;
@@ -113,41 +144,6 @@
             0% { box-shadow: 0 0 5px #f00; }
             50% { box-shadow: 0 0 30px #f00; }
             100% { box-shadow: 0 0 5px #f00; }
-        }
-        
-        .particle {
-            position: absolute;
-            width: 3px;
-            height: 3px;
-            border-radius: 50%;
-            background: #0f0;
-            box-shadow: 0 0 8px #0f0, 0 0 16px #0f0;
-        }
-        
-        .eye {
-            position: absolute;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: #000;
-            border: 2px solid #0f0;
-            box-shadow: 0 0 15px #0f0;
-            z-index: 5;
-        }
-        
-        .pupil {
-            position: absolute;
-            width: 15px;
-            height: 15px;
-            border-radius: 50%;
-            background: #0f0;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.2); opacity: 0.8; }
-            100% { transform: scale(1); opacity: 1; }
         }
         
         #start-overlay {
@@ -226,27 +222,6 @@
             font-size: 1.1rem;
         }
         
-        .camera-feed {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            width: 100px;
-            height: 150px;
-            border: 2px solid #0f0;
-            box-shadow: 0 0 10px #0f0;
-            z-index: 20;
-            overflow: hidden;
-            border-radius: 5px;
-            opacity: 0.7;
-        }
-        
-        #camera-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1);
-        }
-        
         .camera-status {
             position: fixed;
             top: 10px;
@@ -280,30 +255,6 @@
             #start-overlay p {
                 font-size: 0.95rem;
             }
-            
-            .camera-feed {
-                width: 80px;
-                height: 120px;
-            }
-        }
-        
-        #static-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: repeating-linear-gradient(
-                0deg,
-                rgba(0, 0, 0, 0.15),
-                rgba(0, 0, 0, 0.15) 1px,
-                transparent 1px,
-                transparent 2px
-            );
-            pointer-events: none;
-            z-index: 3;
-            opacity: 0.3;
-            mix-blend-mode: overlay;
         }
         
         .scary-element {
@@ -321,6 +272,7 @@
             background: radial-gradient(circle, transparent 30%, #f00 100%);
             border-radius: 50%;
             filter: blur(20px);
+            z-index: 5;
         }
         
         .face-detection-overlay {
@@ -340,29 +292,64 @@
             background: rgba(255, 0, 0, 0.1);
         }
         
-        .deploy-instructions {
+        .static-overlay {
             position: fixed;
-            bottom: 20px;
+            top: 0;
             left: 0;
             width: 100%;
-            text-align: center;
-            color: #0a0;
-            font-size: 0.9rem;
-            z-index: 200;
-            background: rgba(0, 0, 0, 0.7);
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 6;
+            opacity: 0.3;
+            mix-blend-mode: overlay;
+            animation: static-flicker 0.2s infinite;
+        }
+        
+        @keyframes static-flicker {
+            0% { opacity: 0.1; }
+            20% { opacity: 0.3; }
+            40% { opacity: 0.15; }
+            60% { opacity: 0.25; }
+            80% { opacity: 0.2; }
+            100% { opacity: 0.3; }
+        }
+        
+        .audio-control {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            border: 1px solid #0f0;
             padding: 10px;
-            font-family: 'Courier New', monospace;
+            color: #0f0;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
-    <canvas id="reality-canvas"></canvas>
-    
-    <div id="static-overlay"></div>
+    <div id="camera-container">
+        <video id="camera-video" autoplay playsinline muted></video>
+        <canvas id="overlay-canvas"></canvas>
+        <canvas id="distortion-canvas"></canvas>
+        <div class="static-overlay"></div>
+    </div>
     
     <div id="interface">
         <div class="terminal-text">
-            <p>> INITIALIZING REALITY DISTORTION ENGINE v.2.0.1</p>
+            <p>> INITIALIZING REALITY DISTORTION ENGINE v.3.0</p>
             <p>> CAMERA FEED: <span id="camera-status">CONNECTING...</span></p>
             <p>> BIOMETRIC DATA ANALYSIS: ACTIVE</p>
             <p>> USER GAZE DETECTED</p>
@@ -380,10 +367,6 @@
     
     <div id="warning">DO NOT LOOK AWAY</div>
     
-    <div class="camera-feed">
-        <video id="camera-video" autoplay playsinline muted></video>
-    </div>
-    
     <div class="camera-status">CAMERA ACTIVE</div>
     
     <div id="start-overlay">
@@ -398,31 +381,56 @@
     
     <div class="face-detection-overlay"></div>
     
-    <div class="deploy-instructions">
-        GitHub Pages Deployment Ready - Save as index.html
-    </div>
+    <div class="audio-control" id="audio-toggle">🔇 SOUND OFF</div>
+    
+    <!-- Audio elements -->
+    <audio id="static-sound" loop>
+        <source src="https://assets.mixkit.co/active_storage/sfx/250/250-preview.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="distortion-sound" loop>
+        <source src="https://assets.mixkit.co/active_storage/sfx/92/92-preview.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="warning-sound">
+        <source src="https://assets.mixkit.co/active_storage/sfx/106/106-preview.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="heartbeat-sound" loop>
+        <source src="https://assets.mixkit.co/active_storage/sfx/241/241-preview.mp3" type="audio/mpeg">
+    </audio>
     
     <script>
         // DOM elements
-        const canvas = document.getElementById('reality-canvas');
-        const ctx = canvas.getContext('2d');
+        const cameraContainer = document.getElementById('camera-container');
+        const cameraVideo = document.getElementById('camera-video');
+        const overlayCanvas = document.getElementById('overlay-canvas');
+        const overlayCtx = overlayCanvas.getContext('2d');
+        const distortionCanvas = document.getElementById('distortion-canvas');
+        const distortionCtx = distortionCanvas.getContext('2d');
         const progressBar = document.getElementById('progress-bar');
         const levelText = document.getElementById('level');
         const warning = document.getElementById('warning');
         const startOverlay = document.getElementById('start-overlay');
         const startButton = document.getElementById('start-button');
         const scaryFace = document.querySelector('.scary-face');
-        const cameraVideo = document.getElementById('camera-video');
         const cameraStatus = document.getElementById('camera-status');
         const detectionOverlay = document.querySelector('.face-detection-overlay');
+        const staticOverlay = document.querySelector('.static-overlay');
+        const audioToggle = document.getElementById('audio-toggle');
         
-        // Set canvas size to window size
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        // Audio elements
+        const staticSound = document.getElementById('static-sound');
+        const distortionSound = document.getElementById('distortion-sound');
+        const warningSound = document.getElementById('warning-sound');
+        const heartbeatSound = document.getElementById('heartbeat-sound');
+        
+        // Set canvas sizes
+        function resizeCanvases() {
+            overlayCanvas.width = window.innerWidth;
+            overlayCanvas.height = window.innerHeight;
+            distortionCanvas.width = window.innerWidth;
+            distortionCanvas.height = window.innerHeight;
         }
         
-        resizeCanvas();
+        resizeCanvases();
         
         // Engine state
         let observationLevel = 0;
@@ -438,6 +446,11 @@
         let creepinessFactor = 1;
         let faceDetected = false;
         let faceDetectionTimer = 0;
+        let soundEnabled = false;
+        let faceX = 0;
+        let faceY = 0;
+        let faceWidth = 0;
+        let faceHeight = 0;
         
         // Initialize eyes
         function createEyes() {
@@ -445,8 +458,8 @@
             const eyeCount = 8 + Math.floor(Math.random() * 8);
             
             for (let i = 0; i < eyeCount; i++) {
-                const x = Math.random() * canvas.width;
-                const y = Math.random() * canvas.height;
+                const x = Math.random() * overlayCanvas.width;
+                const y = Math.random() * overlayCanvas.height;
                 const size = 25 + Math.random() * 40;
                 
                 eyes.push({
@@ -463,15 +476,15 @@
         // Create quantum particles
         function createParticles() {
             particles = [];
-            const particleCount = 800;
+            const particleCount = 300;
             
             for (let i = 0; i < particleCount; i++) {
                 particles.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
+                    x: Math.random() * overlayCanvas.width,
+                    y: Math.random() * overlayCanvas.height,
                     vx: (Math.random() - 0.5) * 2,
                     vy: (Math.random() - 0.5) * 2,
-                    size: 1 + Math.random() * 2,
+                    size: 1 + Math.random() * 3,
                     life: 10 + Math.random() * 100,
                     color: `hsl(${Math.random() * 120}, 100%, 50%)`
                 });
@@ -480,67 +493,70 @@
         
         // Draw a single eye
         function drawEye(eye) {
-            ctx.save();
-            ctx.translate(eye.x, eye.y);
+            overlayCtx.save();
+            overlayCtx.translate(eye.x, eye.y);
             
             // Draw eye
-            ctx.fillStyle = '#000';
-            ctx.strokeStyle = '#0f0';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, eye.size / 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
+            overlayCtx.fillStyle = '#000';
+            overlayCtx.strokeStyle = '#0f0';
+            overlayCtx.lineWidth = 2;
+            overlayCtx.beginPath();
+            overlayCtx.arc(0, 0, eye.size / 2, 0, Math.PI * 2);
+            overlayCtx.fill();
+            overlayCtx.stroke();
             
             // Draw pupil
             if (eye.blinkState < 0.9) {
                 const pupilSize = eye.size * 0.3 * (1 - eye.blinkState);
-                ctx.fillStyle = '#0f0';
-                ctx.beginPath();
-                ctx.arc(eye.pupilX * eye.size * 0.3, eye.pupilY * eye.size * 0.3, pupilSize / 2, 0, Math.PI * 2);
-                ctx.fill();
+                overlayCtx.fillStyle = '#0f0';
+                overlayCtx.beginPath();
+                overlayCtx.arc(eye.pupilX * eye.size * 0.3, eye.pupilY * eye.size * 0.3, pupilSize / 2, 0, Math.PI * 2);
+                overlayCtx.fill();
                 
                 // Draw pupil highlight
-                ctx.fillStyle = '#fff';
-                ctx.beginPath();
-                ctx.arc(
+                overlayCtx.fillStyle = '#fff';
+                overlayCtx.beginPath();
+                overlayCtx.arc(
                     eye.pupilX * eye.size * 0.3 - pupilSize * 0.3, 
                     eye.pupilY * eye.size * 0.3 - pupilSize * 0.3, 
                     pupilSize * 0.2, 
                     0, 
                     Math.PI * 2
                 );
-                ctx.fill();
+                overlayCtx.fill();
             }
             
-            ctx.restore();
+            overlayCtx.restore();
         }
         
         // Draw quantum particles
         function drawParticles() {
             particles.forEach(p => {
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
+                overlayCtx.fillStyle = p.color;
+                overlayCtx.beginPath();
+                overlayCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                overlayCtx.fill();
             });
         }
         
-        // Create a reality distortion effect
+        // Create a reality distortion effect on the camera feed
         function distortReality() {
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            distortionCtx.clearRect(0, 0, distortionCanvas.width, distortionCanvas.height);
+            distortionCtx.drawImage(cameraVideo, 0, 0, distortionCanvas.width, distortionCanvas.height);
+            
+            const imageData = distortionCtx.getImageData(0, 0, distortionCanvas.width, distortionCanvas.height);
             const data = imageData.data;
             const time = Date.now() * 0.002;
             
-            for (let y = 0; y < canvas.height; y += 2) {
-                for (let x = 0; x < canvas.width; x += 2) {
-                    const i = (y * canvas.width + x) * 4;
+            for (let y = 0; y < distortionCanvas.height; y += 2) {
+                for (let x = 0; x < distortionCanvas.width; x += 2) {
+                    const i = (y * distortionCanvas.width + x) * 4;
                     
                     // Create a wave-like distortion
                     const waveX = Math.sin(x * 0.02 + time) * (5 * distortionIntensity);
                     const waveY = Math.cos(y * 0.02 + time) * (3 * distortionIntensity);
                     
-                    const offset = Math.floor((y + waveY) * canvas.width * 4 + (x + waveX) * 4);
+                    const offset = Math.floor((y + waveY) * distortionCanvas.width * 4 + (x + waveX) * 4);
                     
                     if (offset >= 0 && offset < data.length - 3) {
                         // Swap color channels for psychedelic effect
@@ -554,7 +570,7 @@
                 }
             }
             
-            ctx.putImageData(imageData, 0, 0);
+            distortionCtx.putImageData(imageData, 0, 0);
         }
         
         // Create a glitch effect
@@ -564,12 +580,12 @@
             if (glitchAmount > 0) {
                 for (let i = 0; i < glitchAmount; i++) {
                     const sliceHeight = 1 + Math.random() * 50;
-                    const sliceY = Math.floor(Math.random() * canvas.height);
+                    const sliceY = Math.floor(Math.random() * distortionCanvas.height);
                     const sliceWidth = 5 + Math.random() * 50;
-                    const sliceX = Math.floor(Math.random() * canvas.width);
+                    const sliceX = Math.floor(Math.random() * distortionCanvas.width);
                     
-                    ctx.drawImage(
-                        canvas, 
+                    distortionCtx.drawImage(
+                        distortionCanvas, 
                         sliceX, sliceY, sliceWidth, sliceHeight,
                         sliceX + (Math.random() * 20 - 10), 
                         sliceY, 
@@ -587,13 +603,19 @@
             if (Math.random() > 0.2) {
                 faceDetected = true;
                 
+                // Calculate face position (simulated)
+                faceX = distortionCanvas.width * 0.25 + Math.random() * distortionCanvas.width * 0.5;
+                faceY = distortionCanvas.height * 0.25 + Math.random() * distortionCanvas.height * 0.3;
+                faceWidth = 150 + Math.random() * 100;
+                faceHeight = 200 + Math.random() * 100;
+                
                 // Create detection box
                 const box = document.createElement('div');
                 box.className = 'detection-box';
-                box.style.width = '150px';
-                box.style.height = '200px';
-                box.style.top = '30%';
-                box.style.left = 'calc(50% - 75px)';
+                box.style.width = `${faceWidth}px`;
+                box.style.height = `${faceHeight}px`;
+                box.style.top = `${faceY}px`;
+                box.style.left = `${faceX}px`;
                 detectionOverlay.appendChild(box);
                 
                 // Update status
@@ -609,6 +631,39 @@
             }
         }
         
+        // Draw scary face effect on the camera feed
+        function drawScaryFaceEffect() {
+            if (!faceDetected) return;
+            
+            overlayCtx.save();
+            overlayCtx.globalCompositeOperation = 'lighter';
+            
+            // Draw red glowing eyes
+            overlayCtx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+            overlayCtx.beginPath();
+            overlayCtx.arc(faceX + faceWidth * 0.3, faceY + faceHeight * 0.4, faceWidth * 0.1, 0, Math.PI * 2);
+            overlayCtx.fill();
+            
+            overlayCtx.beginPath();
+            overlayCtx.arc(faceX + faceWidth * 0.7, faceY + faceHeight * 0.4, faceWidth * 0.1, 0, Math.PI * 2);
+            overlayCtx.fill();
+            
+            // Draw creepy mouth
+            overlayCtx.strokeStyle = 'rgba(255, 0, 0, 0.7)';
+            overlayCtx.lineWidth = 5;
+            overlayCtx.beginPath();
+            overlayCtx.arc(faceX + faceWidth * 0.5, faceY + faceHeight * 0.7, faceWidth * 0.2, 0, Math.PI);
+            overlayCtx.stroke();
+            
+            overlayCtx.restore();
+        }
+        
+        // Update static overlay effect
+        function updateStaticOverlay() {
+            const opacity = 0.1 + Math.random() * 0.2;
+            staticOverlay.style.opacity = opacity;
+        }
+        
         // Main render loop
         function render(timestamp) {
             if (!engineActive) return;
@@ -616,9 +671,8 @@
             const deltaTime = (timestamp - lastTime) / 1000;
             lastTime = timestamp;
             
-            // Clear canvas with a dark background
-            ctx.fillStyle = '#000';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Clear overlay canvas
+            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
             
             // Draw quantum particles
             drawParticles();
@@ -630,10 +684,10 @@
                 p.life -= deltaTime;
                 
                 // Wrap around edges
-                if (p.x < 0) p.x = canvas.width;
-                if (p.x > canvas.width) p.x = 0;
-                if (p.y < 0) p.y = canvas.height;
-                if (p.y > canvas.height) p.y = 0;
+                if (p.x < 0) p.x = overlayCanvas.width;
+                if (p.x > overlayCanvas.width) p.x = 0;
+                if (p.y < 0) p.y = overlayCanvas.height;
+                if (p.y > overlayCanvas.height) p.y = 0;
                 
                 // Random velocity changes
                 if (Math.random() < 0.05) {
@@ -644,13 +698,13 @@
             
             // Filter out dead particles and add new ones
             particles = particles.filter(p => p.life > 0);
-            while (particles.length < 800) {
+            while (particles.length < 300) {
                 particles.push({
-                    x: Math.random() < 0.5 ? 0 : canvas.width,
-                    y: Math.random() * canvas.height,
+                    x: Math.random() < 0.5 ? 0 : overlayCanvas.width,
+                    y: Math.random() * overlayCanvas.height,
                     vx: (Math.random() - 0.5) * 4,
                     vy: (Math.random() - 0.5) * 4,
-                    size: 1 + Math.random() * 2,
+                    size: 1 + Math.random() * 3,
                     life: 10 + Math.random() * 100,
                     color: `hsl(${Math.random() * 120}, 100%, 50%)`
                 });
@@ -675,8 +729,8 @@
                     }
                     
                     // All eyes watch the user (center of screen)
-                    const dx = canvas.width/2 - eye.x;
-                    const dy = canvas.height/2 - eye.y;
+                    const dx = overlayCanvas.width/2 - eye.x;
+                    const dy = overlayCanvas.height/2 - eye.y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     
                     if (dist < 600) {
@@ -712,16 +766,24 @@
                     creepinessFactor = 1 + (observationLevel / 30);
                     eyeFollowSpeed = 0.1 + (observationLevel / 200);
                     distortionIntensity = 1 + (observationLevel / 40);
+                    
+                    // Audio intensity
+                    if (soundEnabled) {
+                        staticSound.volume = Math.min(0.5, observationLevel / 200);
+                        distortionSound.volume = Math.min(0.7, observationLevel / 150);
+                        heartbeatSound.volume = Math.min(0.8, observationLevel / 120);
+                    }
                 }
             }
             
             // Draw eyes
             eyes.forEach(drawEye);
             
-            // Apply reality distortion based on observation level
-            if (observationLevel > 15) {
-                distortReality();
-            }
+            // Apply scary face effect to camera feed
+            drawScaryFaceEffect();
+            
+            // Apply reality distortion to camera feed
+            distortReality();
             
             // Apply glitch effects at higher levels
             if (observationLevel > 40) {
@@ -737,6 +799,7 @@
                 lastWarning = timestamp;
                 warning.style.opacity = '1';
                 warning.style.animation = 'pulse 0.5s infinite';
+                
                 setTimeout(() => {
                     warning.style.opacity = '0';
                     warning.style.animation = 'none';
@@ -747,6 +810,12 @@
                 setTimeout(() => {
                     scaryFace.style.opacity = '0';
                 }, 1000);
+                
+                // Play warning sound
+                if (soundEnabled) {
+                    warningSound.currentTime = 0;
+                    warningSound.play();
+                }
                 
                 // Trigger vibration if supported
                 if (navigator.vibrate) {
@@ -760,12 +829,19 @@
                 creepinessFactor = Math.max(1, creepinessFactor - 0.01);
                 eyeFollowSpeed = Math.max(0.1, eyeFollowSpeed - 0.005);
                 distortionIntensity = Math.max(1, distortionIntensity - 0.01);
+                
+                // Reduce audio
+                if (soundEnabled) {
+                    staticSound.volume = Math.max(0.1, staticSound.volume - 0.01);
+                    distortionSound.volume = Math.max(0.1, distortionSound.volume - 0.01);
+                    heartbeatSound.volume = Math.max(0.1, heartbeatSound.volume - 0.01);
+                }
             }
             
             // Occasionally add new eyes to increase intensity
             if (Math.random() < 0.005 && eyes.length < 20) {
-                const x = Math.random() * canvas.width;
-                const y = Math.random() * canvas.height;
+                const x = Math.random() * overlayCanvas.width;
+                const y = Math.random() * overlayCanvas.height;
                 const size = 25 + Math.random() * 40;
                 
                 eyes.push({
@@ -785,6 +861,9 @@
                 simulateFaceDetection();
             }
             
+            // Update static overlay
+            updateStaticOverlay();
+            
             requestAnimationFrame(render);
         }
         
@@ -794,8 +873,8 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     video: { 
                         facingMode: 'user',
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
                     } 
                 });
                 cameraVideo.srcObject = stream;
@@ -829,9 +908,30 @@
             }
         }
         
+        // Toggle sound
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            
+            if (soundEnabled) {
+                audioToggle.textContent = '🔊 SOUND ON';
+                staticSound.play();
+                distortionSound.play();
+                heartbeatSound.play();
+                
+                staticSound.volume = 0.1;
+                distortionSound.volume = 0.1;
+                heartbeatSound.volume = 0.1;
+            } else {
+                audioToggle.textContent = '🔇 SOUND OFF';
+                staticSound.pause();
+                distortionSound.pause();
+                heartbeatSound.pause();
+            }
+        }
+        
         // Resize handling
         window.addEventListener('resize', () => {
-            resizeCanvas();
+            resizeCanvases();
             createEyes();
             createParticles();
         });
@@ -859,6 +959,9 @@
                     }, 1000 + i * 500);
                 });
                 
+                // Show audio control
+                audioToggle.classList.remove('hidden');
+                
                 // Start render loop
                 requestAnimationFrame(render);
             } else {
@@ -877,15 +980,8 @@
             }
         });
         
-        // Static overlay effect
-        function updateStatic() {
-            const staticOverlay = document.getElementById('static-overlay');
-            const opacity = 0.2 + Math.random() * 0.1;
-            staticOverlay.style.opacity = opacity;
-            requestAnimationFrame(updateStatic);
-        }
-        
-        updateStatic();
+        // Audio toggle event
+        audioToggle.addEventListener('click', toggleSound);
     </script>
 </body>
 </html>
