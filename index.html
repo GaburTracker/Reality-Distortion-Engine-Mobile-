@@ -79,29 +79,6 @@
             font-size: 0.9rem;
         }
         
-        .terminal-text {
-            line-height: 1.4;
-            opacity: 0.9;
-            max-width: 100%;
-            text-align: justify;
-        }
-        
-        .terminal-text p {
-            margin-bottom: 0.8rem;
-        }
-        
-        .glitch {
-            animation: glitch 1s infinite;
-        }
-        
-        @keyframes glitch {
-            0% { text-shadow: 0 0 10px #0f0, 0 0 20px #0f0; }
-            25% { text-shadow: 0 0 10px #f0f, 0 0 20px #f0f; transform: skewX(5deg); }
-            50% { text-shadow: 0 0 10px #0ff, 0 0 20px #0ff; transform: skewX(-5deg); }
-            75% { text-shadow: 0 0 10px #ff0, 0 0 20px #ff0; }
-            100% { text-shadow: 0 0 10px #0f0, 0 0 20px #0f0; }
-        }
-        
         #progress {
             width: 100%;
             height: 4px;
@@ -125,7 +102,6 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 2.5rem;
             text-align: center;
             color: #f00;
             text-shadow: 0 0 20px #f00;
@@ -142,10 +118,7 @@
             align-items: center;
             justify-content: center;
             text-align: center;
-        }
-        
-        #warning-text {
-            font-size: 3rem;
+            font-size: min(8vw, 3.5rem);
             line-height: 1.2;
         }
         
@@ -231,45 +204,6 @@
             font-size: 1.1rem;
         }
         
-        .camera-status {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            color: #0f0;
-            font-size: 0.8rem;
-            z-index: 20;
-            background: rgba(0,0,0,0.7);
-            padding: 5px 10px;
-            border: 1px solid #0f0;
-        }
-        
-        @media (max-width: 480px) {
-            #interface {
-                padding: 1rem;
-                font-size: 0.8rem;
-            }
-            
-            .terminal-text p {
-                margin-bottom: 0.6rem;
-            }
-            
-            #warning {
-                font-size: 1.8rem;
-            }
-            
-            #warning-text {
-                font-size: 2.2rem;
-            }
-            
-            #start-overlay h1 {
-                font-size: 1.8rem;
-            }
-            
-            #start-overlay p {
-                font-size: 0.95rem;
-            }
-        }
-        
         .static-overlay {
             position: fixed;
             top: 0;
@@ -352,6 +286,38 @@
             font-weight: bold;
             margin-top: 5px;
         }
+        
+        .terminal-text {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 5;
+            color: #0f0;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px #0f0;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border: 1px solid #0f0;
+        }
+        
+        @media (max-width: 480px) {
+            #interface {
+                padding: 1rem;
+                font-size: 0.8rem;
+            }
+            
+            #warning {
+                font-size: min(7vw, 2.2rem);
+            }
+            
+            #start-overlay h1 {
+                font-size: 1.8rem;
+            }
+            
+            #start-overlay p {
+                font-size: 0.95rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -364,16 +330,11 @@
     
     <div id="interface">
         <div class="terminal-text">
-            <p>> REALITY DISTORTION ENGINE: <span id="level">0%</span></p>
-            <div id="progress">
-                <div id="progress-bar"></div>
-            </div>
+            REALITY DISTORTION: <span id="level">0%</span>
         </div>
     </div>
     
-    <div id="warning">
-        <div id="warning-text">DO NOT LOOK AWAY</div>
-    </div>
+    <div id="warning">DO NOT LOOK AWAY</div>
     
     <div id="start-overlay">
         <h1>REALITY DISTORTION ENGINE</h1>
@@ -385,11 +346,6 @@
     <div class="face-detection-overlay"></div>
     
     <div class="audio-control hidden" id="audio-toggle">🔇 SOUND OFF</div>
-    
-    <div class="minimal-ui hidden" id="minimal-ui">
-        <div>DISTORTION LEVEL</div>
-        <div class="distortion-level"><span id="distortion-level">0%</span></div>
-    </div>
     
     <!-- Audio elements -->
     <audio id="ambient-sound" loop>
@@ -407,7 +363,6 @@
     
     <script>
         // DOM elements
-        const cameraContainer = document.getElementById('camera-container');
         const cameraVideo = document.getElementById('camera-video');
         const overlayCanvas = document.getElementById('overlay-canvas');
         const overlayCtx = overlayCanvas.getContext('2d');
@@ -415,16 +370,12 @@
         const distortionCtx = distortionCanvas.getContext('2d');
         const progressBar = document.getElementById('progress-bar');
         const levelText = document.getElementById('level');
-        const distortionLevelText = document.getElementById('distortion-level');
         const warning = document.getElementById('warning');
-        const warningText = document.getElementById('warning-text');
         const startOverlay = document.getElementById('start-overlay');
         const startButton = document.getElementById('start-button');
-        const cameraStatus = document.getElementById('camera-status');
+        const audioToggle = document.getElementById('audio-toggle');
         const detectionOverlay = document.querySelector('.face-detection-overlay');
         const staticOverlay = document.querySelector('.static-overlay');
-        const audioToggle = document.getElementById('audio-toggle');
-        const minimalUI = document.getElementById('minimal-ui');
         
         // Audio elements
         const ambientSound = document.getElementById('ambient-sound');
@@ -445,14 +396,11 @@
         // Engine state
         let observationLevel = 0;
         let lastTime = 0;
-        let eyeTimer = 0;
         let distortionActive = false;
         let engineActive = false;
         let lastWarning = 0;
         let distortionIntensity = 1;
-        let creepinessFactor = 1;
         let faceDetected = false;
-        let faceDetectionTimer = 0;
         let soundEnabled = false;
         let faceX = 0;
         let faceY = 0;
@@ -462,6 +410,7 @@
         let faceMovement = 0;
         let lookAwayTimer = 0;
         let lookAwayWarning = false;
+        let faceDetectionTimer = 0;
         
         // Initialize camera
         async function initCamera() {
@@ -633,20 +582,18 @@
             const deltaTime = (timestamp - lastTime) / 1000;
             lastTime = timestamp;
             
-            // Clear overlay canvas
-            overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-            
             // Apply reality distortion to camera feed
             distortReality();
             
             // Increase observation level when face is detected
             if (faceDetected) {
-                observationLevel += 0.2 * creepinessFactor;
+                // Faster progression at higher levels
+                const increment = 0.1 + (observationLevel / 50);
+                observationLevel += increment;
                 if (observationLevel > 100) observationLevel = 100;
                 
-                // Increase creepiness as observation level rises
-                creepinessFactor = 1 + (observationLevel / 20);
-                distortionIntensity = 1 + (observationLevel / 15);
+                // Increase distortion intensity non-linearly
+                distortionIntensity = 1 + Math.pow(observationLevel / 30, 2);
                 
                 // Audio intensity
                 if (soundEnabled) {
@@ -659,7 +606,6 @@
             // Update progress bar
             progressBar.style.width = `${observationLevel}%`;
             levelText.textContent = `${Math.floor(observationLevel)}%`;
-            distortionLevelText.textContent = `${Math.floor(observationLevel)}%`;
             
             // Warning at high levels
             if (observationLevel > 70 && timestamp - lastWarning > 3000) {
@@ -684,7 +630,6 @@
             // Reset observation level if not detected
             if (!faceDetected && observationLevel > 0) {
                 observationLevel -= 0.1;
-                creepinessFactor = Math.max(1, creepinessFactor - 0.01);
                 distortionIntensity = Math.max(1, distortionIntensity - 0.01);
                 
                 // Reduce audio
@@ -742,7 +687,6 @@
                 
                 // Show audio control
                 audioToggle.classList.remove('hidden');
-                minimalUI.classList.remove('hidden');
                 
                 // Start render loop
                 requestAnimationFrame(render);
